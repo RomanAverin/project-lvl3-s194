@@ -9,3 +9,9 @@
 ```
 make install
 ```
+
+## Use
+To download page from URL to file
+```
+page-loader --output /var/tmp https://hexlet.io/courses
+``` 
