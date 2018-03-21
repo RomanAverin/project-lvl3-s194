@@ -14,9 +14,9 @@ let expectedData;
 let tmpDir;
 
 // hacks
-axios.defaults.host = host;
 axios.defaults.adapter = httpAdapter;
 nock.disableNetConnect();
+
 describe('Testing tool functions', async () => {
   it('makeNamefromURL', (done) => {
     expect(makeNamefromURL('https://ya.ru/')).toBe('ya-ru.html');
@@ -26,17 +26,16 @@ describe('Testing tool functions', async () => {
 
 describe('Testing page-loader', () => {
   beforeAll(async () => {
-    expectedData = await fs.readFileSync(path.join(fixtures, testingFile), 'utf-8');
+    expectedData = await fs.readFile(path.join(fixtures, testingFile), 'utf-8');
     tmpDir = await fs.mkdtempSync(path.join(os.tmpdir(), 'test-'));
   });
-  it('load html to file', async (done) => {
+  it('load html to file', async () => {
     nock(host)
       .get('/test')
       .reply(200, expectedData);
     await download(`${host}/test`, tmpDir);
-    const loadedData = await fs.readFileSync(path.join(tmpDir, loadedfileName), 'utf-8');
+    const loadedData = await fs.readFile(path.join(tmpDir, loadedfileName), 'utf-8');
     expect(loadedData).toBe(expectedData);
-    done();
   });
 });
 
