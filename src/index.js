@@ -20,7 +20,7 @@ const makeNameFromURL = (link, extention = '') => {
     .concat(`${extention}`);
 };
 
-const checkLinksForLocal = (link) => {
+const isUrlAbsolute = (link) => {
   if (!link) {
     return false;
   }
@@ -31,21 +31,24 @@ const checkLinksForLocal = (link) => {
   return true;
 };
 
-const getResouceLinks = (response) => {
-  const $ = cheerio.load(response.data);
+const getResouceLinks = (html) => {
+  log('Getting resource links from HTML');
+  const $ = cheerio.load(html);
   const links = [];
   Object.keys(selectorFocusResource).map((tag => $(tag)
     .each((i, elem) => links.push($(elem).attr(selectorFocusResource[tag])))));
-  const filtredLinks = links.filter(link => checkLinksForLocal(link));
-  log('success, getting links: %o', filtredLinks.length);
-  return { links: filtredLinks, response };
+  const filtredLinks = links.filter(link => isUrlAbsolute(link));
+  log('Success getting links: %o', filtredLinks.length);
+  return filtredLinks;
 };
 
-const mkResourceDir = (pathResourseDir, response) => fs.mkdir(pathResourseDir)
-  .then(() => {
-    log('Directory create success: %s', pathResourseDir);
-    return response;
-  });
+const mkResourceDir = (pathResourseDir) => {
+  log('Start make directory for resource files');
+  return fs.mkdir(pathResourseDir)
+    .then(() => {
+      log('Directory create success: %s', pathResourseDir);
+    });
+};
 
 const makeFileNameFromURL = (link) => {
   const { pathname } = url.parse(link);
@@ -53,63 +56,78 @@ const makeFileNameFromURL = (link) => {
   return `${dir}/${name}`.replace(/^./gi, '').replace(/[^a-zA-Z]/gi, '-').concat(ext);
 };
 
-const downloadFiles = (links, savePath, urlObj, response) =>
-  axios.all(links.map((localLink) => {
+const downloadFiles = (links, savePath, urlObj, html) => {
+  log('Starting downloads resource files');
+  return Promise.all(links.map((localLink) => {
     const resourceURL = url.format({
       protocol: urlObj.protocol,
       host: urlObj.host,
       pathname: localLink,
     });
     const axiosParams = { method: 'get', url: resourceURL, responseType: 'stream' };
-    return axios.all([makeFileNameFromURL(localLink), axios(axiosParams)])
-      .then(axios.spread((fileName, res) => {
+    const fileName = makeFileNameFromURL(localLink);
+    return axios(axiosParams)
+      .then((res) => {
         log('%s GET %s', res.status, res.config.url);
         return res.data.pipe(fs.createWriteStream(path.resolve(savePath, fileName)));
-      }));
-  })).then(() => response);
+      })
+      .then(() => log('Save success: %s', fileName));
+  })).then(() => html);
+};
 
 const getNewResourceLink = (link, pathToResorce) => {
-  if (checkLinksForLocal(link)) {
+  if (isUrlAbsolute(link)) {
     return path.join(pathToResorce, makeFileNameFromURL(link));
   }
   return link;
 };
 
-const processHtml = (pathToSrcDir, html) => {
-  const $ = cheerio.load(html);
-  Object.keys(selectorFocusResource).forEach(tag => $(tag)
-    .attr(selectorFocusResource[tag], (item, value) => {
-      if (value === undefined) {
-        return null;
-      }
-      if (value) {
-        log('Replaced value of tag: %s on %s', value, getNewResourceLink(value, pathToSrcDir));
-        return getNewResourceLink(value, pathToSrcDir);
-      }
-      return value;
-    }));
-  return $.html();
+const changeHtml = (pathToSrcDir, html) => {
+  log('Starting processing HTML to change resource links');
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const $ = cheerio.load(html);
+      Object.keys(selectorFocusResource).forEach(tag => $(tag)
+        .attr(selectorFocusResource[tag], (item, value) => {
+          if (value === undefined) {
+            return null;
+          }
+          if (value) {
+            log('Replaced value of tag: %s on %s', value, getNewResourceLink(value, pathToSrcDir));
+            return getNewResourceLink(value, pathToSrcDir);
+          }
+          return value;
+        }));
+      resolve($.html());
+    }, 0);
+  });
 };
 
-export { makeNameFromURL, makeFileNameFromURL, getNewResourceLink, checkLinksForLocal };
+export { makeNameFromURL, makeFileNameFromURL, getNewResourceLink, isUrlAbsolute };
 
 export default (link, pathToOutput = './') => {
   const pageSavePath = path.resolve(pathToOutput, makeNameFromURL(link, '.html'));
   const resourceSavePath = path.resolve(pathToOutput, makeNameFromURL(link, '_files'));
   const resourceDir = makeNameFromURL(link, '_files');
   const urlObj = url.parse(link);
-  return axios.get(link)
+  return mkResourceDir(resourceSavePath)
+    .then(() => {
+      log('Download HTML');
+      return axios.get(link);
+    })
     .then((response) => {
       log('%s GET %s', response.status, link);
-      return response;
+      return response.data;
     })
-    .then(response => mkResourceDir(resourceSavePath, response))
-    .then(response => getResouceLinks(response))
-    .then(({ links, response }) => downloadFiles(links, resourceSavePath, urlObj, response))
-    .then(response => processHtml(resourceDir, response.data))
     .then((html) => {
-      log('Saving page: %s', pageSavePath);
+      const links = getResouceLinks(html);
+      return downloadFiles(links, resourceSavePath, urlObj, html);
+    })
+    .then(html => changeHtml(resourceDir, html))
+    .then((html) => {
+      log('Saving changed page: %s', pageSavePath);
       return fs.writeFile(pageSavePath, html);
     })
+    .then(() => log('Saved success'))
     .catch(error => console.log(error));
 };
