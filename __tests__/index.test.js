@@ -4,7 +4,7 @@ import fs from 'mz/fs';
 import os from 'os';
 import nock from 'nock';
 import path from 'path';
-import download, { makeNameFromURL, makeFileNameFromURL, checkLinksForLocal } from '../src';
+import download, { makeNameFromURL, makeFileNameFromURL, isUrlAbsolute } from '../src';
 
 const host = 'http://www.example.com';
 const loadedfileName = 'www-example-com-test.html';
@@ -29,7 +29,7 @@ describe('Testing tool functions', async () => {
   it('checkLinksForLocal', (done) => {
     const tested = ['/media/screen.css', '', undefined, 'http://test.ru/file.png', '/media/script.js', '/media/image.jpg'];
     const expectedLinks = ['/media/screen.css', '/media/script.js', '/media/image.jpg'];
-    expect(tested.filter(link => checkLinksForLocal(link)))
+    expect(tested.filter(link => isUrlAbsolute(link)))
       .toEqual(expect.arrayContaining(expectedLinks));
     done();
   });
@@ -39,6 +39,8 @@ beforeAll(() => {
   nock(host)
     .get('/test')
     .reply(200, originalData)
+    .get('/')
+    .reply(404)
     .get('/media/style.css')
     .replyWithFile(200, path.join(fixtures, 'style.css'))
     .get('/media/script._js')
@@ -47,7 +49,7 @@ beforeAll(() => {
     .replyWithFile(200, path.join(fixtures, 'image.jpg'));
 });
 describe('Testing page-loader', () => {
-  it('load html to file', async () => {
+  it('Load html to file', async () => {
     await download(`${host}/test`, tmpDir);
     const loadedData = await fs.readFile(path.join(tmpDir, loadedfileName), 'utf-8');
     expect(loadedData).toBe(expectedData);
