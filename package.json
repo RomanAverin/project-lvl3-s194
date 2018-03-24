@@ -1,6 +1,6 @@
 {
   "name": "hexlet-project03-by-rastler",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Loader page from URL to file",
   "main": "dist/index.js",
   "bin": {
@@ -22,19 +22,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hexlet-boilerplates/nodejs-package.git"
+    "url": "git+https://github.com/Rastler/project-lvl3-s194.git"
   },
   "author": "Roman Averin",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/hexlet-boilerplates/nodejs-package/issues"
+    "url": "hhttps://github.com/Rastler/project-lvl3-s194/issues"
   },
   "jest": {
     "testEnvironment": "node"
   },
-  "homepage": "https://github.com/hexlet-boilerplates/nodejs-package#readme",
+  "homepage": "https://github.com/Rastler/project-lvl3-s194#readme",
   "dependencies": {
     "axios": "^0.18.0",
+    "cheerio": "^1.0.0-rc.2",
     "commander": "^2.15.0",
     "mz": "^2.7.0"
   },

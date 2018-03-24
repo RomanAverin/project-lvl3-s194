@@ -4,13 +4,13 @@ import fs from 'mz/fs';
 import os from 'os';
 import nock from 'nock';
 import path from 'path';
-import download, { makeNamefromURL } from '../src';
+import download, { makeNameFromURL, makeFileNameFromURL, checkLinksForLocal } from '../src';
 
 const host = 'http://www.example.com';
 const loadedfileName = 'www-example-com-test.html';
-const testingFile = 'expected.html';
 const fixtures = '__tests__/__fixtures__';
-let expectedData;
+const expectedData = fs.readFileSync(path.join(fixtures, 'expected.html'), 'utf-8');
+const originalData = fs.readFileSync(path.join(fixtures, 'original.html'), 'utf-8');
 let tmpDir;
 
 // hacks
@@ -19,20 +19,35 @@ nock.disableNetConnect();
 
 describe('Testing tool functions', async () => {
   it('makeNamefromURL', (done) => {
-    expect(makeNamefromURL('https://ya.ru/')).toBe('ya-ru.html');
+    expect(makeNameFromURL('https://ya.ru', '.html')).toBe('ya-ru.html');
+    done();
+  });
+  it('makeFileNameFromUrl', (done) => {
+    expect(makeFileNameFromURL('https://ya.ru/css/screen.css')).toBe('css-screen.css');
+    done();
+  });
+  it('checkLinksForLocal', (done) => {
+    const tested = ['/media/screen.css', '', undefined, 'http://test.ru/file.png', '/media/script.js', '/media/image.jpg'];
+    const expectedLinks = ['/media/screen.css', '/media/script.js', '/media/image.jpg'];
+    expect(tested.filter(link => checkLinksForLocal(link)))
+      .toEqual(expect.arrayContaining(expectedLinks));
     done();
   });
 });
-
+beforeAll(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-'));
+  nock(host)
+    .get('/test')
+    .reply(200, originalData)
+    .get('/media/style.css')
+    .replyWithFile(200, path.join(fixtures, 'style.css'))
+    .get('/media/script._js')
+    .replyWithFile(200, path.join(fixtures, 'script._js'))
+    .get('/media/image.jpg')
+    .replyWithFile(200, path.join(fixtures, 'image.jpg'));
+});
 describe('Testing page-loader', () => {
-  beforeAll(async () => {
-    expectedData = await fs.readFile(path.join(fixtures, testingFile), 'utf-8');
-    tmpDir = await fs.mkdtempSync(path.join(os.tmpdir(), 'test-'));
-  });
   it('load html to file', async () => {
-    nock(host)
-      .get('/test')
-      .reply(200, expectedData);
     await download(`${host}/test`, tmpDir);
     const loadedData = await fs.readFile(path.join(tmpDir, loadedfileName), 'utf-8');
     expect(loadedData).toBe(expectedData);

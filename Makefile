@@ -4,7 +4,7 @@ run:
 	npm run babel-node -- 'src/bin/page-loader.js'
 
 test-run:
-	npm run babel-node -- 'src/bin/page-loader.js' https://ya.ru
+	npm run babel-node -- 'src/bin/page-loader.js' https://ru.hexlet.io/courses/
 install-deps:
 	npm install
 
