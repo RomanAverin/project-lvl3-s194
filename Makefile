@@ -5,11 +5,12 @@ run:
 
 test-run:
 	npm run babel-node -- 'src/bin/page-loader.js' https://ru.hexlet.io/courses/
+
 install-deps:
 	npm install
 
-install-flow-typed:
-	npm run flow-typed install
+test-covarage:
+	npm test -- --coverage
 
 build:
 	rm -rf dist
