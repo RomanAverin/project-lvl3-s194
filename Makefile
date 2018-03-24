@@ -9,7 +9,7 @@ test-run:
 install-deps:
 	npm install
 
-test-covarage:
+test-coverage:
 	npm test -- --coverage
 
 build:
