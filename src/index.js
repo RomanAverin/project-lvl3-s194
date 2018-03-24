@@ -3,6 +3,9 @@ import fs from 'mz/fs';
 import url from 'url';
 import path from 'path';
 import cheerio from 'cheerio';
+import debug from 'debug';
+
+const log = debug('page-loader:');
 
 const selectorFocusResource = {
   link: 'href',
@@ -33,10 +36,16 @@ const getResouceLinks = (response) => {
   const links = [];
   Object.keys(selectorFocusResource).map((tag => $(tag)
     .each((i, elem) => links.push($(elem).attr(selectorFocusResource[tag])))));
-  return { links: links.filter(link => checkLinksForLocal(link)), response };
+  const filtredLinks = links.filter(link => checkLinksForLocal(link));
+  log('success, getting links: %o', filtredLinks.length);
+  return { links: filtredLinks, response };
 };
 
-const mkResourceDir = (pathResourseDir, response) => fs.mkdir(pathResourseDir).then(() => response);
+const mkResourceDir = (pathResourseDir, response) => fs.mkdir(pathResourseDir)
+  .then(() => {
+    log('Directory create success: %s', pathResourseDir);
+    return response;
+  });
 
 const makeFileNameFromURL = (link) => {
   const { pathname } = url.parse(link);
@@ -53,8 +62,10 @@ const downloadFiles = (links, savePath, urlObj, response) =>
     });
     const axiosParams = { method: 'get', url: resourceURL, responseType: 'stream' };
     return axios.all([makeFileNameFromURL(localLink), axios(axiosParams)])
-      .then(axios.spread((fileName, res) =>
-        res.data.pipe(fs.createWriteStream(path.resolve(savePath, fileName)))));
+      .then(axios.spread((fileName, res) => {
+        log('%s GET %s', res.status, res.config.url);
+        return res.data.pipe(fs.createWriteStream(path.resolve(savePath, fileName)));
+      }));
   })).then(() => response);
 
 const getNewResourceLink = (link, pathToResorce) => {
@@ -72,6 +83,7 @@ const processHtml = (pathToSrcDir, html) => {
         return null;
       }
       if (value) {
+        log('Replaced value of tag: %s on %s', value, getNewResourceLink(value, pathToSrcDir));
         return getNewResourceLink(value, pathToSrcDir);
       }
       return value;
@@ -87,10 +99,17 @@ export default (link, pathToOutput = './') => {
   const resourceDir = makeNameFromURL(link, '_files');
   const urlObj = url.parse(link);
   return axios.get(link)
+    .then((response) => {
+      log('%s GET %s', response.status, link);
+      return response;
+    })
     .then(response => mkResourceDir(resourceSavePath, response))
     .then(response => getResouceLinks(response))
     .then(({ links, response }) => downloadFiles(links, resourceSavePath, urlObj, response))
     .then(response => processHtml(resourceDir, response.data))
-    .then(html => fs.writeFile(pageSavePath, html))
+    .then((html) => {
+      log('Saving page: %s', pageSavePath);
+      return fs.writeFile(pageSavePath, html);
+    })
     .catch(error => console.log(error));
 };

@@ -21,8 +21,8 @@ test:
 watch:
 	npm run test -- --watch
 
-check-types:
-	npm run flow
+debug:
+	DEBUG=page-loader:* npm test
 
 lint:
 	npm run eslint .
