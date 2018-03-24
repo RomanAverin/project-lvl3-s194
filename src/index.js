@@ -120,10 +120,10 @@ export default (link, pathToOutput = './') => {
       return response.data;
     })
     .then((html) => {
+      const changedHtml = changeHtml(resourceDir, html);
       const links = getResouceLinks(html);
-      return downloadFiles(links, resourceSavePath, urlObj, html);
+      return downloadFiles(links, resourceSavePath, urlObj, changedHtml);
     })
-    .then(html => changeHtml(resourceDir, html))
     .then((html) => {
       log('Saving changed page: %s', pageSavePath);
       return fs.writeFile(pageSavePath, html);
