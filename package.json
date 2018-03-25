@@ -1,6 +1,6 @@
 {
   "name": "hexlet-project03-by-rastler",
-  "version": "0.3.1",
+  "version": "0.4.9",
   "description": "Loader page from URL to file",
   "main": "dist/index.js",
   "bin": {

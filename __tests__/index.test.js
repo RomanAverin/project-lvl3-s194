@@ -54,5 +54,19 @@ describe('Testing page-loader', () => {
     const loadedData = await fs.readFile(path.join(tmpDir, loadedfileName), 'utf-8');
     expect(loadedData).toBe(expectedData);
   });
+  it('Testing request page not found(404)', async () => {
+    try {
+      await download(host, tmpDir);
+    } catch (error) {
+      expect(error.message).toEqual('Request failed with status code 404');
+    }
+  });
+  it('Testing error make directory(EACCES: permission denied)', async () => {
+    try {
+      await download(host, '/');
+    } catch (error) {
+      expect(error.message).toEqual('EACCES: permission denied, mkdir \'/www-example-com_files\'');
+    }
+  });
 });
 

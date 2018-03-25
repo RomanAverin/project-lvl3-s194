@@ -7,6 +7,11 @@ import debug from 'debug';
 
 const log = debug('page-loader:');
 
+const errorHandler = (error) => {
+  const { message } = error;
+  return `ERROR: ${message}`;
+};
+
 const selectorFocusResource = {
   link: 'href',
   script: 'src',
@@ -56,7 +61,7 @@ const makeFileNameFromURL = (link) => {
   return `${dir}/${name}`.replace(/^./gi, '').replace(/[^a-zA-Z]/gi, '-').concat(ext);
 };
 
-const downloadFiles = (links, savePath, urlObj, html) => {
+const downloadFiles = (links, savePath, urlObj) => {
   log('Starting downloads resource files');
   return Promise.all(links.map((localLink) => {
     const resourceURL = url.format({
@@ -72,7 +77,7 @@ const downloadFiles = (links, savePath, urlObj, html) => {
         return res.data.pipe(fs.createWriteStream(path.resolve(savePath, fileName)));
       })
       .then(() => log('Save success: %s', fileName));
-  })).then(() => html);
+  }));
 };
 
 const getNewResourceLink = (link, pathToResorce) => {
@@ -93,7 +98,7 @@ const changeHtml = (pathToSrcDir, html) => {
             return null;
           }
           if (value) {
-            log('Replaced value of tag: %s on %s', value, getNewResourceLink(value, pathToSrcDir));
+            log('Replaced value of tag: %s on %O', value, getNewResourceLink(value, pathToSrcDir));
             return getNewResourceLink(value, pathToSrcDir);
           }
           return value;
@@ -103,7 +108,7 @@ const changeHtml = (pathToSrcDir, html) => {
   });
 };
 
-export { makeNameFromURL, makeFileNameFromURL, getNewResourceLink, isUrlAbsolute };
+export { makeNameFromURL, makeFileNameFromURL, getNewResourceLink, isUrlAbsolute, errorHandler };
 
 export default (link, pathToOutput = './') => {
   const pageSavePath = path.resolve(pathToOutput, makeNameFromURL(link, '.html'));
@@ -122,12 +127,18 @@ export default (link, pathToOutput = './') => {
     .then((html) => {
       const changedHtml = changeHtml(resourceDir, html);
       const links = getResouceLinks(html);
-      return downloadFiles(links, resourceSavePath, urlObj, changedHtml);
+      return downloadFiles(links, resourceSavePath, urlObj)
+        .then(() => changedHtml);
     })
-    .then((html) => {
+    .then((changedHtml) => {
+      const data = changedHtml;
       log('Saving changed page: %s', pageSavePath);
-      return fs.writeFile(pageSavePath, html);
+      return fs.writeFile(pageSavePath, data);
     })
     .then(() => log('Saved success'))
-    .catch(error => console.log(error));
+    .catch((error) => {
+      const errorMessage = errorHandler(error);
+      log('Download complited with error %O', errorMessage);
+      return Promise.reject(error);
+    });
 };
