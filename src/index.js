@@ -26,24 +26,24 @@ const makeNameFromURL = (link, extention = '') => {
     .concat(`${extention}`);
 };
 
-const isUrlAbsolute = (link) => {
+const isUrlAbsolute = (link, hostname) => {
   if (!link) {
     return false;
   }
-  const { host } = url.parse(link);
-  if (host) {
-    return false;
+  const { host: pageHost } = url.parse(link);
+  if (pageHost === hostname) {
+    return true;
   }
-  return true;
+  return false;
 };
 
-const getResouceLinks = (html) => {
-  log('Getting resource links from HTML');
+const getResouceLinks = (html, hostname) => {
+  log('Getting resource links from HTML for host:', hostname);
   const $ = cheerio.load(html);
   const links = [];
   Object.keys(selectorFocusResource).map((tag => $(tag)
     .each((i, elem) => links.push($(elem).attr(selectorFocusResource[tag])))));
-  const filtredLinks = links.filter(link => isUrlAbsolute(link));
+  const filtredLinks = links.filter(link => isUrlAbsolute(link, hostname));
   log('Success getting links: %o', filtredLinks.length);
   return filtredLinks;
 };
@@ -58,23 +58,19 @@ const mkResourceDir = (pathResourseDir) => {
 
 const makeFileNameFromURL = (link) => {
   const { pathname } = url.parse(link);
-  const { dir, name, ext } = path.parse(pathname);
-  return `${dir}/${name}`.replace(/^./gi, '').replace(/[^a-zA-Z]/gi, '-').concat(ext);
+  if (path.isAbsolute(pathname)) {
+    return path.normalize(pathname).slice(1).split('/').join('-');
+  }
+  return path.normalize(pathname).split('/').join('-');
 };
 
-
-const downloadFiles = (links, savePath, urlObj) => {
+const downloadFiles = (links, savePath) => {
   log('Starting downloads resource files');
   const dowloadTasks = new Listr(links.map(link =>
     ({
       title: `Download: ${link}`,
       task: () => {
-        const resourceURL = url.format({
-          protocol: urlObj.protocol,
-          host: urlObj.host,
-          pathname: link,
-        });
-        const axiosParams = { method: 'get', url: resourceURL, responseType: 'stream' };
+        const axiosParams = { method: 'get', url: link, responseType: 'stream' };
         const fileName = makeFileNameFromURL(link);
         return axios(axiosParams)
           .then((res) => {
@@ -87,14 +83,14 @@ const downloadFiles = (links, savePath, urlObj) => {
   return dowloadTasks.run();
 };
 
-const getNewResourceLink = (link, pathToResorce) => {
-  if (isUrlAbsolute(link)) {
+const getNewResourceLink = (link, pathToResorce, hostname) => {
+  if (isUrlAbsolute(link, hostname)) {
     return path.join(pathToResorce, makeFileNameFromURL(link));
   }
   return link;
 };
 
-const changeHtml = (pathToSrcDir, html) => {
+const changeHtml = (pathToSrcDir, html, hostname) => {
   log('Starting processing HTML to change resource links');
   const $ = cheerio.load(html);
   Object.keys(selectorFocusResource).forEach(tag => $(tag)
@@ -103,8 +99,8 @@ const changeHtml = (pathToSrcDir, html) => {
         return null;
       }
       if (value) {
-        log('Replaced value of tag: %s on %O', value, getNewResourceLink(value, pathToSrcDir));
-        return getNewResourceLink(value, pathToSrcDir);
+        log('Replaced value of tag: %s on %s', value, getNewResourceLink(value, pathToSrcDir, hostname));
+        return getNewResourceLink(value, pathToSrcDir, hostname);
       }
       return value;
     }));
@@ -128,9 +124,9 @@ export default (link, pathToOutput = './') => {
       return response.data;
     })
     .then((html) => {
-      const changedHtml = changeHtml(resourceDir, html);
-      const links = getResouceLinks(html);
-      return downloadFiles(links, resourceSavePath, urlObj)
+      const links = getResouceLinks(html, urlObj.hostname);
+      const changedHtml = changeHtml(resourceDir, html, urlObj.hostname);
+      return downloadFiles(links, resourceSavePath)
         .then(() => changedHtml);
     })
     .then((changedHtml) => {
@@ -141,7 +137,7 @@ export default (link, pathToOutput = './') => {
     .then(() => log('Saved success'))
     .catch((error) => {
       const errorMessage = errorHandler(error);
-      log('Download complited with error %O', errorMessage);
+      log('Download completed with error %O', errorMessage);
       return Promise.reject(error);
     });
 };

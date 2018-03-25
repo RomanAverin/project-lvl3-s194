@@ -26,10 +26,14 @@ describe('Testing tool functions', async () => {
     expect(makeFileNameFromURL('https://ya.ru/css/screen.css')).toBe('css-screen.css');
     done();
   });
-  it('checkLinksForLocal', (done) => {
-    const tested = ['/media/screen.css', '', undefined, 'http://test.ru/file.png', '/media/script.js', '/media/image.jpg'];
-    const expectedLinks = ['/media/screen.css', '/media/script.js', '/media/image.jpg'];
-    expect(tested.filter(link => isUrlAbsolute(link)))
+  it('isUrlAbsolute', (done) => {
+    const tested = [
+      'http://www.example.com/media/screen.css',
+      '', undefined, 'http://test.ru/file.png',
+      'http://www.example.com/media/script.js',
+      '/media/image.jpg'];
+    const expectedLinks = ['http://www.example.com/media/screen.css', 'http://www.example.com/media/script.js'];
+    expect(tested.filter(link => isUrlAbsolute(link, 'www.example.com')))
       .toEqual(expect.arrayContaining(expectedLinks));
     done();
   });
