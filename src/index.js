@@ -4,6 +4,7 @@ import url from 'url';
 import path from 'path';
 import cheerio from 'cheerio';
 import debug from 'debug';
+import Listr from 'listr';
 
 const log = debug('page-loader:');
 
@@ -61,23 +62,29 @@ const makeFileNameFromURL = (link) => {
   return `${dir}/${name}`.replace(/^./gi, '').replace(/[^a-zA-Z]/gi, '-').concat(ext);
 };
 
+
 const downloadFiles = (links, savePath, urlObj) => {
   log('Starting downloads resource files');
-  return Promise.all(links.map((localLink) => {
-    const resourceURL = url.format({
-      protocol: urlObj.protocol,
-      host: urlObj.host,
-      pathname: localLink,
-    });
-    const axiosParams = { method: 'get', url: resourceURL, responseType: 'stream' };
-    const fileName = makeFileNameFromURL(localLink);
-    return axios(axiosParams)
-      .then((res) => {
-        log('%s GET %s', res.status, res.config.url);
-        return res.data.pipe(fs.createWriteStream(path.resolve(savePath, fileName)));
-      })
-      .then(() => log('Save success: %s', fileName));
-  }));
+  const dowloadTasks = new Listr(links.map(link =>
+    ({
+      title: `Download: ${link}`,
+      task: () => {
+        const resourceURL = url.format({
+          protocol: urlObj.protocol,
+          host: urlObj.host,
+          pathname: link,
+        });
+        const axiosParams = { method: 'get', url: resourceURL, responseType: 'stream' };
+        const fileName = makeFileNameFromURL(link);
+        return axios(axiosParams)
+          .then((res) => {
+            log('%s GET %s', res.status, res.config.url);
+            return res.data.pipe(fs.createWriteStream(path.resolve(savePath, fileName)));
+          })
+          .then(() => log('Save success: %s', fileName));
+      },
+    })));
+  return dowloadTasks.run();
 };
 
 const getNewResourceLink = (link, pathToResorce) => {
@@ -89,23 +96,19 @@ const getNewResourceLink = (link, pathToResorce) => {
 
 const changeHtml = (pathToSrcDir, html) => {
   log('Starting processing HTML to change resource links');
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const $ = cheerio.load(html);
-      Object.keys(selectorFocusResource).forEach(tag => $(tag)
-        .attr(selectorFocusResource[tag], (item, value) => {
-          if (value === undefined) {
-            return null;
-          }
-          if (value) {
-            log('Replaced value of tag: %s on %O', value, getNewResourceLink(value, pathToSrcDir));
-            return getNewResourceLink(value, pathToSrcDir);
-          }
-          return value;
-        }));
-      resolve($.html());
-    }, 0);
-  });
+  const $ = cheerio.load(html);
+  Object.keys(selectorFocusResource).forEach(tag => $(tag)
+    .attr(selectorFocusResource[tag], (item, value) => {
+      if (value === undefined) {
+        return null;
+      }
+      if (value) {
+        log('Replaced value of tag: %s on %O', value, getNewResourceLink(value, pathToSrcDir));
+        return getNewResourceLink(value, pathToSrcDir);
+      }
+      return value;
+    }));
+  return $.html();
 };
 
 export { makeNameFromURL, makeFileNameFromURL, getNewResourceLink, isUrlAbsolute, errorHandler };
