@@ -1,6 +1,6 @@
 # nodejs-package
 
-[![github-actions](https://github.com/Rastler/project-lvl3-s194/actions/workflows/tests-workflow.yml/badge.svg)](https://github.com/Rastler/project-lvl3-s194/actions/workflows/tests-workflow.yml)
+[![github-actions](https://github.com/Rastler/project-lvl3-s194/actions/workflows/test-workflow.yml/badge.svg)](https://github.com/Rastler/project-lvl3-s194/actions/workflows/test-workflow.yml)
 
 ## Setup
 
