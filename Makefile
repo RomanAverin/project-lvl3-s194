@@ -1,12 +1,10 @@
-install: install-deps install-flow-typed
-
 run:
-	npm run babel-node -- 'src/bin/page-loader.js'
+	node 'src/bin/page-loader.js'
 
 test-run:
-	npm run babel-node -- 'src/bin/page-loader.js' https://ru.hexlet.io/courses
+	node 'src/bin/page-loader.js' https://ru.hexlet.io/courses
 
-install-deps:
+install:
 	npm install
 
 test-coverage:

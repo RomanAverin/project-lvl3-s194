@@ -1,23 +1,21 @@
 {
   "name": "hexlet-project03-by-rastler",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Loader page from URL to file",
   "main": "dist/index.js",
   "bin": {
     "page-loader": "dist/bin/page-loader.js"
   },
   "engines": {
-    "node": "8"
+    "node": "16"
   },
   "files": [
     "dist"
   ],
+  "type": "module",
   "scripts": {
-    "test": "jest",
-    "babel-node": "babel-node",
-    "gulp": "gulp",
+    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
     "eslint": "eslint",
-    "build": "NODE_ENV=production babel src --out-dir dist --source-maps inline",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -34,29 +32,20 @@
   },
   "homepage": "https://github.com/Rastler/project-lvl3-s194#readme",
   "dependencies": {
-    "axios": "^0.18.0",
-    "cheerio": "^1.0.0-rc.2",
-    "commander": "^2.15.0",
-    "debug": "^3.1.0",
-    "listr": "^0.13.0",
+    "axios": "^0.25.0",
+    "cheerio": "^1.0.0-rc.10",
+    "commander": "^8.3.0",
+    "debug": "^4.3.3",
+    "listr": "^0.14.3",
     "mz": "^2.7.0"
   },
   "devDependencies": {
-    "babel-cli": "*",
-    "babel-core": "*",
-    "babel-eslint": "*",
-    "babel-jest": "*",
-    "babel-plugin-transform-runtime": "*",
-    "babel-preset-env": "*",
-    "babel-preset-flow": "*",
-    "babel-preset-stage-0": "*",
-    "eslint": "^4.10.0",
+    "@jest/globals": "^27.4.6",
+    "eslint": "^8.7.0",
     "eslint-config-airbnb-base": "*",
-    "eslint-plugin-flowtype": "*",
     "eslint-plugin-import": "*",
     "eslint-plugin-jest": "*",
-    "jest": "^21",
-    "jest-cli": "*",
-    "nock": "^9.2.3"
+    "jest-cli": "^27.4.7",
+    "nock": "^13.2.2"
   }
 }

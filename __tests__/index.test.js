@@ -1,5 +1,4 @@
-import axios from 'axios';
-import httpAdapter from 'axios/lib/adapters/http';
+import { expect } from '@jest/globals';
 import fs from 'mz/fs';
 import os from 'os';
 import nock from 'nock';
@@ -13,11 +12,18 @@ const expectedData = fs.readFileSync(path.join(fixtures, 'expected.html'), 'utf-
 const originalData = fs.readFileSync(path.join(fixtures, 'original.html'), 'utf-8');
 let tmpDir;
 
+const getError = async (call) => {
+  try {
+    await call();
+  } catch (error) {
+    return error;
+  }
+};
+
 // hacks
-axios.defaults.adapter = httpAdapter;
 nock.disableNetConnect();
 
-describe('Testing tool functions', async () => {
+describe('Testing tool functions', () => {
   it('makeNamefromURL', (done) => {
     expect(makeNameFromURL('https://ya.ru', '.html')).toBe('ya-ru.html');
     done();
@@ -33,7 +39,7 @@ describe('Testing tool functions', async () => {
       'http://www.example.com/media/script.js',
       '/media/image.jpg'];
     const expectedLinks = ['http://www.example.com/media/screen.css', 'http://www.example.com/media/script.js'];
-    expect(tested.filter(link => isUrlAbsolute(link, 'www.example.com')))
+    expect(tested.filter((link) => isUrlAbsolute(link, 'www.example.com')))
       .toEqual(expect.arrayContaining(expectedLinks));
     done();
   });
@@ -58,19 +64,14 @@ describe('Testing page-loader', () => {
     const loadedData = await fs.readFile(path.join(tmpDir, loadedfileName), 'utf-8');
     expect(loadedData).toBe(expectedData);
   });
+
   it('Testing request page not found(404)', async () => {
-    try {
-      await download(host, tmpDir);
-    } catch (error) {
-      expect(error.message).toEqual('Request failed with status code 404');
-    }
+    const error = await getError(async () => download(host, tmpDir));
+    expect(error.message).toEqual('Request failed with status code 404');
   });
+
   it('Testing error make directory(EACCES: permission denied)', async () => {
-    try {
-      await download(host, '/');
-    } catch (error) {
-      expect(error.message).toEqual('EACCES: permission denied, mkdir \'/www-example-com_files\'');
-    }
+    const error = await getError(async () => download(host, '/'));
+    expect(error.message).toEqual('EACCES: permission denied, mkdir \'/www-example-com_files\'');
   });
 });
-
