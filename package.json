@@ -34,18 +34,18 @@
   "dependencies": {
     "axios": "^0.25.0",
     "cheerio": "^1.0.0-rc.10",
-    "commander": "^8.3.0",
+    "commander": "^9.0.0",
     "debug": "^4.3.3",
-    "listr": "^0.14.3",
+    "listr": "^0.14.2",
     "mz": "^2.7.0"
   },
   "devDependencies": {
-    "@jest/globals": "^27.4.6",
-    "eslint": "^8.7.0",
+    "@jest/globals": "^27.5.0",
+    "eslint": "^8.8.0",
     "eslint-config-airbnb-base": "*",
     "eslint-plugin-import": "*",
     "eslint-plugin-jest": "*",
-    "jest-cli": "^27.4.7",
-    "nock": "^13.2.2"
+    "jest-cli": "^27.5.0",
+    "nock": "^13.2.4"
   }
 }
