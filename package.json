@@ -20,17 +20,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Rastler/project-lvl3-s194.git"
+    "url": "git+https://github.com/RomanAverin/project-lvl3-s194.git"
   },
   "author": "Roman Averin",
   "license": "ISC",
   "bugs": {
-    "url": "hhttps://github.com/Rastler/project-lvl3-s194/issues"
+    "url": "hhttps://github.com/RomanAverin/project-lvl3-s194/issues"
   },
   "jest": {
     "testEnvironment": "node"
   },
-  "homepage": "https://github.com/Rastler/project-lvl3-s194#readme",
+  "homepage": "https://github.com/RomanAverin/project-lvl3-s194#readme",
   "dependencies": {
     "axios": "^0.25.0",
     "cheerio": "^1.0.0-rc.10",
